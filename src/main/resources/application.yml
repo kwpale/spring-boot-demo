@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: prod
   thymeleaf:
     mode: HTML
     cache: false
@@ -28,11 +28,13 @@ spring:
 logging:
   level:
     ROOT: INFO
+    org.springframework.beans.factory: DEBUG
 
 management:
+#  actually enabled in SecurityConfig.ManagementWebSecurityConfigurerAdapter
   security:
-    roles: ADMIN
     enabled: false
+  context-path: /mgnt
 
 app:
   security:

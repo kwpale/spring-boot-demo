@@ -1,10 +1,12 @@
 package com.demo.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.autoconfigure.ManagementServerProperties;
+import org.springframework.boot.autoconfigure.h2.H2ConsoleProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.web.authentication.rememberme.InMemoryTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 
@@ -53,13 +56,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
             .httpBasic()
                 .realmName(securityProperties.getRealmName())
-//            Added for H2 dev
-            .and()
-            .csrf()
-                .disable()
-            .headers()
-                .frameOptions().disable()
-//            End for H2 dev
             .and()
             .authorizeRequests()
                 .regexMatchers("\\/user\\/create\\/?").permitAll()
@@ -68,13 +64,51 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest().permitAll();
     }
     
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+    @Autowired
+    protected void globalConfigure(AuthenticationManagerBuilder auth) throws Exception {
         auth
             .jdbcAuthentication()
                 .dataSource(dataSource)
                 .usersByUsernameQuery(securityProperties.getUsersByUsernameQuery())
                 .authoritiesByUsernameQuery(securityProperties.getAuthoritiesByUsernameQuery())
                 .passwordEncoder(passwordEncoder());
+    }
+
+    @Profile("dev")
+    @Component
+    @Order(1)
+    public static class H2WebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+
+        @Autowired
+        private H2ConsoleProperties console;
+
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            // H2 console config
+            String path = this.console.getPath();
+            String antPattern = (path.endsWith("/") ? path + "**" : path + "/**");
+            HttpSecurity h2Console = http.antMatcher(antPattern);
+            h2Console.formLogin();
+            h2Console.authorizeRequests().anyRequest().hasRole("ADMIN");
+            h2Console.csrf().disable();
+            h2Console.headers().frameOptions().sameOrigin();
+        }
+    }
+
+    @Component
+    @Order(2)
+    public static class ManagementWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+
+        @Autowired
+        private ManagementServerProperties management;
+
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            String path = management.getContextPath();
+            String antPattern = (path.endsWith("/") ? path + "**" : path + "/**");
+            HttpSecurity mngtConsole = http.antMatcher(antPattern);
+            mngtConsole.formLogin();
+            mngtConsole.authorizeRequests().anyRequest().hasRole("ADMIN");
+        }
     }
 }

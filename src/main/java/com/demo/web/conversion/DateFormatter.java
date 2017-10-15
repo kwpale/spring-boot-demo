@@ -20,11 +20,8 @@
 package com.demo.web.conversion;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.format.Formatter;
-import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -33,12 +30,11 @@ import java.util.Locale;
 
 public class DateFormatter implements Formatter<Date> {
 
-    @Autowired
     private ReloadableResourceBundleMessageSource messageSource;
 
-
-    public DateFormatter() {
-        super();
+    @Autowired
+    public void setMessageSource(ReloadableResourceBundleMessageSource messageSource) {
+        this.messageSource = messageSource;
     }
 
     public Date parse(final String text, final Locale locale) throws ParseException {
