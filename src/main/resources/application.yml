@@ -12,6 +12,8 @@ spring:
     properties:
       hibernate.show_sql: true
   datasource:
+#  override the default tomcat pool jdbc
+    type: com.zaxxer.hikari.HikariDataSource
     hikari:
       maximum-pool-size: 10
       connection-test-query: SELECT 1
@@ -28,7 +30,6 @@ spring:
 logging:
   level:
     ROOT: INFO
-    org.springframework.beans.factory: DEBUG
 
 management:
 #  actually enabled in SecurityConfig.ManagementWebSecurityConfigurerAdapter
